@@ -16,6 +16,7 @@ from forms import *
 import sys
 from itertools import groupby
 from operator import attrgetter
+from models import db, Artist, Venue, Show
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -24,62 +25,8 @@ from operator import attrgetter
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    genres = db.Column(db.String(500))
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    website = db.Column(db.String(500))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Venue', cascade='all, delete-orphan', lazy=True)
-
-    def __repr__(self):
-       return f'Venue ID: {self.id}, Name: {self.name}'
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    website = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Artist', cascade='all, delete-orphan', lazy=True)
-
-    def __repr__(self):
-       return f'Artist ID: {self.id}, Name: {self.name}'
-
-class Show(db.Model):
-   __tablename__ = 'Show'
-
-   id = db.Column(db.Integer, primary_key=True)
-   artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-   venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
-   start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-   def __repr__(self):
-      return f'Show ID: {self.id}, Artist ID: {self.artist_id}, venue ID: {self.venue_id}'
 
 # Create tables
 app.app_context().push()
@@ -113,8 +60,6 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
   data = []
   # Query database. Ordered by city and state for use as key in groupby()
   venues = Venue.query.order_by('city', 'state', 'name').all()
@@ -129,9 +74,6 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for Hop should return "The Musical Hop".
-  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   page_data = []
   search_term = request.form.get('search_term', '')
   search_expression = '%' + search_term + '%'
@@ -177,6 +119,7 @@ def show_venue(venue_id):
       past_shows.append(show)
   data.upcoming_shows = upcoming_shows
   data.past_shows = past_shows
+
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -223,8 +166,6 @@ def create_venue_submission():
      # on successful db insert, flash success
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
 
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
@@ -257,9 +198,6 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
-  # search for "band" should return "The Wild Sax Band".
   page_data = []
   search_term = request.form.get('search_term', '')
   search_expression = '%' + search_term + '%'
@@ -287,8 +225,6 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the artist page with the given artist_id
-  # TODO: replace with real artist data from the artist table, using artist_id
   data = Artist.query.get(artist_id)
   data.genres = data.genres.split(',')
   upcoming_shows = []
@@ -306,6 +242,7 @@ def show_artist(artist_id):
       past_shows.append(show)
   data.upcoming_shows = upcoming_shows
   data.past_shows = past_shows
+
   return render_template('pages/show_artist.html', artist=data)
 
 #  Update
@@ -324,6 +261,7 @@ def edit_artist(artist_id):
   form.facebook_link.data = artist.facebook_link
   form.seeking_venue.data = artist.seeking_venue
   form.seeking_description.data = artist.seeking_description
+
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
@@ -372,6 +310,7 @@ def edit_venue(venue_id):
   form.facebook_link.data = venue.facebook_link
   form.seeking_talent.data = venue.seeking_talent
   form.seeking_description.data = venue.seeking_description
+
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
@@ -449,10 +388,6 @@ def create_artist_submission():
         # on successful db insert, flash success
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
 
-  # called upon submitting the new artist listing form
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
-
   return render_template('pages/home.html')
 
 
@@ -473,7 +408,7 @@ def shows():
         "artist_image_link": show.Artist.image_link,
         "start_time": format_datetime(str(show.start_time))
      })
-  # TODO: replace with real venues data.
+     
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
