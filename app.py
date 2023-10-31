@@ -60,8 +60,6 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
   data = []
   # Query database. Ordered by city and state for use as key in groupby()
   venues = Venue.query.order_by('city', 'state', 'name').all()
@@ -76,9 +74,6 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for Hop should return "The Musical Hop".
-  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   page_data = []
   search_term = request.form.get('search_term', '')
   search_expression = '%' + search_term + '%'
@@ -124,6 +119,7 @@ def show_venue(venue_id):
       past_shows.append(show)
   data.upcoming_shows = upcoming_shows
   data.past_shows = past_shows
+
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -170,8 +166,6 @@ def create_venue_submission():
      # on successful db insert, flash success
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
 
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
@@ -204,9 +198,6 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
-  # search for "band" should return "The Wild Sax Band".
   page_data = []
   search_term = request.form.get('search_term', '')
   search_expression = '%' + search_term + '%'
@@ -234,8 +225,6 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the artist page with the given artist_id
-  # TODO: replace with real artist data from the artist table, using artist_id
   data = Artist.query.get(artist_id)
   data.genres = data.genres.split(',')
   upcoming_shows = []
@@ -253,6 +242,7 @@ def show_artist(artist_id):
       past_shows.append(show)
   data.upcoming_shows = upcoming_shows
   data.past_shows = past_shows
+
   return render_template('pages/show_artist.html', artist=data)
 
 #  Update
@@ -271,6 +261,7 @@ def edit_artist(artist_id):
   form.facebook_link.data = artist.facebook_link
   form.seeking_venue.data = artist.seeking_venue
   form.seeking_description.data = artist.seeking_description
+
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
@@ -319,6 +310,7 @@ def edit_venue(venue_id):
   form.facebook_link.data = venue.facebook_link
   form.seeking_talent.data = venue.seeking_talent
   form.seeking_description.data = venue.seeking_description
+
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
@@ -396,10 +388,6 @@ def create_artist_submission():
         # on successful db insert, flash success
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
 
-  # called upon submitting the new artist listing form
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
-
   return render_template('pages/home.html')
 
 
@@ -420,7 +408,7 @@ def shows():
         "artist_image_link": show.Artist.image_link,
         "start_time": format_datetime(str(show.start_time))
      })
-  # TODO: replace with real venues data.
+     
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
